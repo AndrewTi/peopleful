@@ -1,0 +1,19 @@
+{
+  "name": "bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Andrey Tyndyk <andreytyndyk@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "nodemon src/index.js",
+    "start:dev": "DEBUG=app nodemon src/index.js"
+  },
+  "dependencies": {
+    "debug": "3.1.0",
+    "dotenv": "6.0.0",
+    "mongodb": "3.0.10",
+    "mongoose": "5.1.5",
+    "nodemon": "1.17.5",
+    "telebot": "1.2.6"
+  }
+}
