@@ -1,6 +1,21 @@
 require('dotenv').config()
 const debug = require('debug')('app')
 const TeleBot = require('telebot');
+const mongoose = require('mongoose');
+const Person = require('./models/Person');
+const List = require('./models/List');
+ 
+mongoose.connect(process.env.MONGO_URL);
+
+// Person.create({
+//     name: 'andrew',
+//     creator: '123'
+// }, (err, doc) => {
+//     console.log(err, doc);
+// })
+
+
+
 
 const bot = new TeleBot({
     token: process.env.TELEGRAM_TOKEN, // Required. Telegram Bot API token.
@@ -19,6 +34,16 @@ bot.on('/help', (msg) => {
     const info = 'this is relationship helper for smart people that care.';
 
     return bot.sendMessage(msg.from.id, info, {replyMarkup});
+});
+
+bot.on('/lists', (msg) => {
+    Person.find({}, (err, persons) => {
+        let message = persons
+            .map(person => person.name)
+            .join("\n")
+
+        bot.sendMessage(msg.from.id, message);
+    })
 });
 
 bot.start();
