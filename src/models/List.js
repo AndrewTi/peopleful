@@ -8,7 +8,7 @@ const List = new Schema({
       index: true
     },
     date: Date,
-    // people: [Person],
+    people: [{ type: Schema.Types.ObjectId, ref: 'Person' }],
     creator: String
 });
   
