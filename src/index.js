@@ -23,7 +23,9 @@ const bot = new TeleBot({
                 { label: 'My lists', command: '/lists' },
                 { label: 'Create list', command: '/list_create' },
                 { label: 'Update list', command: '/list_update' },
-                { label: 'Delete list', command: '/list_delete' }
+                { label: 'Delete list', command: '/list_delete' },
+                { label: 'Rename list', command: '/list_rename' }, 
+                { label: 'View persons', command: '/persons_view' }, 
             ]
         }
     }
@@ -89,7 +91,7 @@ bot.on('ask.list-name', async msg => {
 });
 
 bot.on('/list_delete', async msg => {
-    const lists = await List.find({});
+    const lists = await List.find({creator: msg.from.id});
 
     let replyMarkup = bot.keyboard([
         lists
@@ -101,10 +103,9 @@ bot.on('/list_delete', async msg => {
 });
 
 bot.on('/list_delete_name', async msg => {
-
     const title = msg.text.match(/\/list_delete_name (.*)$/)[1];
 
-    const list = await List.findOneAndRemove({title});
+    const list = await List.findOneAndRemove({title, creator: msg.from.id});
 
     let message = '';
 
@@ -117,7 +118,7 @@ bot.on('/list_delete_name', async msg => {
     // const lists = await List.find({});
 
     let replyMarkup = bot.keyboard([
-        ['My lists','Create list', 'Update list', 'Delete list']
+        ['My lists', 'Create list', 'Update list', 'Delete list']
     ], {resize: true, once: true});
 
     return bot.sendMessage(msg.from.id, message, { replyMarkup });
@@ -137,6 +138,38 @@ bot.on('/list_update', async msg => {
     return bot.sendMessage(msg.from.id, message, { replyMarkup });
 });
 
+bot.on('/list_rename', async msg => {
+    const lists = await List.find({creator: msg.from.id});
+
+    let replyMarkup = bot.keyboard([
+        lists
+            .map(list => list.title)
+            .map(list => `/list_rename_name ${list}`)
+    ], {resize: true, once: true});
+
+    return bot.sendMessage(msg.from.id, `Please, select list to rename`, { replyMarkup });
+})
+
+bot.on('/list_rename_name', async msg => {
+    const title = msg.text.match(/\/list_rename_name (.*)$/)[1];
+
+    // @todo add validation if list exists
+    return bot.sendMessage(msg.from.id, 'How would you like to rename the list "'+title+'"?', {ask: 'list-rename'});
+})
+
+bot.on('/persons_view', async msg => {
+    const lists = await List.findOne({creator: msg.from.id}).populate('people');
+
+    let message = lists.people
+            .map(person => `${person.name}`)
+            .join("\n");
+    
+    let replyMarkup = bot.keyboard([
+        ['My lists', 'Add person', 'Remove person']
+    ], {resize: true, once: true});
+
+    return bot.sendMessage(msg.from.id, message, { replyMarkup });
+})
 
 
 bot.on('/debug', (msg) => {
