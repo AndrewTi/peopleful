@@ -44,14 +44,22 @@ bot.on('/help', (msg) => {
 });
 
 bot.on('/lists', (msg) => {
-    let replyMarkup = bot.keyboard([
-        ['Create list', 'Update list', 'Delete list']
-    ], {resize: true, once: true});
 
-    List.find({}, (err, lists) => {
+    List.find({creator: msg.from.id}, (err, lists) => {
+        if(!lists[0]) {
+            let replyMarkup = bot.keyboard([
+                ['Create list']
+            ], {resize: true, once: true});
+
+            return bot.sendMessage(msg.from.id, 'You have no lists', { replyMarkup });
+        }
         let message = lists
-            .map(list => list.title)
-            .join("\n")
+            .map(list => `${list.title}, ${list.people.length} persons`)
+            .join("\n");
+
+        let replyMarkup = bot.keyboard([
+            ['My lists', 'Create list', 'Update list', 'Delete list']
+        ], {resize: true, once: true});
 
         bot.sendMessage(msg.from.id, message, { replyMarkup });
     })
@@ -97,6 +105,28 @@ bot.on('/list_delete_name', async msg => {
     const title = msg.text.match(/\/list_delete_name (.*)$/)[1];
 
     const list = await List.findOneAndRemove({title});
+
+    let message = '';
+
+    if(list) {
+        message = 'List deleted'
+    }else {
+        message = 'Cannot find the list: '+ title;
+    }
+
+    // const lists = await List.find({});
+
+    let replyMarkup = bot.keyboard([
+        ['My lists','Create list', 'Update list', 'Delete list']
+    ], {resize: true, once: true});
+
+    return bot.sendMessage(msg.from.id, message, { replyMarkup });
+});
+
+bot.on('/list_update', async msg => {
+    const title = msg.text.match(/\/list_delete_name (.*)$/)[1];
+
+    const list = await List.findOne({title});
 
     let message = '';
 
