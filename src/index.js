@@ -124,22 +124,14 @@ bot.on('/list_delete_name', async msg => {
 });
 
 bot.on('/list_update', async msg => {
-    const title = msg.text.match(/\/list_delete_name (.*)$/)[1];
+    const lists = await List.find({creator: msg.from.id});
 
-    const list = await List.findOne({title});
-
-    let message = '';
-
-    if(list) {
-        message = 'List deleted'
-    }else {
-        message = 'Cannot find the list: '+ title;
-    }
-
-    // const lists = await List.find({});
+    let message = lists
+        .map(list => `${list.title}, ${list.people.length} persons`)
+        .join("\n");
 
     let replyMarkup = bot.keyboard([
-        ['My lists','Create list', 'Update list', 'Delete list']
+        ['My lists', 'Rename list', 'View persons', 'Add person']
     ], {resize: true, once: true});
 
     return bot.sendMessage(msg.from.id, message, { replyMarkup });
