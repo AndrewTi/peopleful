@@ -27,6 +27,7 @@ const bot = new TeleBot({
                 { label: 'Rename list', command: '/list_rename' }, 
                 { label: 'View persons', command: '/persons_view' }, 
                 { label: 'Add person', command: '/person_add' },
+                { label: 'Today to contact', command: '/today' }
             ]
         }
     }
@@ -44,6 +45,21 @@ bot.on('/help', (msg) => {
     const info = 'this is relationship helper for smart people that care.';
 
     return bot.sendMessage(msg.from.id, info, {replyMarkup});
+});
+
+bot.on('/today', async msg => {
+    let replyMarkup = bot.keyboard([
+        ['My lists', 'Today to contact', 'My settings']
+    ], {resize: true, once: true});
+
+    const person = await Person.findOne({
+        creator: msg.from.id
+    }, null, {sort: {'lastUsed': 1}});
+
+    person.lastUsed = + new Date;
+    await person.save();
+
+    return bot.sendMessage(msg.from.id, `🖖 ${person.name}`, { replyMarkup });
 });
 
 bot.on('/lists', (msg) => {
