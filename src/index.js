@@ -26,6 +26,8 @@ const bot = new TeleBot({
                 { label: 'Delete list', command: '/list_delete' },
                 { label: 'Rename list', command: '/list_rename' }, 
                 { label: 'View persons', command: '/persons_view' }, 
+                { label: 'Add person', command: '/person_add' },
+                { label: 'Today to contact', command: '/today' }
             ]
         }
     }
@@ -45,18 +47,37 @@ bot.on('/help', (msg) => {
     return bot.sendMessage(msg.from.id, info, {replyMarkup});
 });
 
-bot.on('/lists', (msg) => {
+bot.on('/today', async msg => {
+    let replyMarkup = bot.keyboard([
+        ['My lists', 'Today to contact', 'My settings']
+    ], {resize: true, once: true});
 
+    const person = await Person.findOne({
+        creator: msg.from.id
+    }, null, {sort: {'lastUsed': 1}});
+
+    person.lastUsed = + new Date;
+    await person.save();
+
+    return bot.sendMessage(msg.from.id, `🖖 ${person.name}`, { replyMarkup });
+});
+
+bot.on('/lists', (msg) => {
     List.find({creator: msg.from.id}, (err, lists) => {
-        if(!lists[0]) {
+        if (err) {
+            return bot.sendMessage(msg.from.id, 'Sorry, something went wrong.');
+        }
+
+        if (!lists.length) {
             let replyMarkup = bot.keyboard([
                 ['Create list']
             ], {resize: true, once: true});
 
             return bot.sendMessage(msg.from.id, 'You have no lists', { replyMarkup });
         }
+
         let message = lists
-            .map(list => `${list.title}, ${list.people.length} persons`)
+            .map(list => `▪️ ${list.title} (${list.people.length} persons)`)
             .join("\n");
 
         let replyMarkup = bot.keyboard([
@@ -169,7 +190,41 @@ bot.on('/persons_view', async msg => {
     ], {resize: true, once: true});
 
     return bot.sendMessage(msg.from.id, message, { replyMarkup });
-})
+});
+
+bot.on('/person_add', async msg => {
+    let listTitle;
+    let personName;
+
+    try {
+        [a, listTitle, personName] = msg.text.match(/\/person_add "(.+?)" "(.+?)"$/);
+    }
+    catch (e) { }
+
+    if (!listTitle || !personName) {
+        return bot.sendMessage(msg.from.id, 'Please, type /person_add "<list-name>" "<person-name>".');
+    }
+
+    const list = await List.findOne({
+        title: listTitle,
+        creator: msg.from.id
+    });
+
+    if (!list) {
+        return bot.sendMessage(msg.from.id, `List "${listTitle}" has not been found.`);
+    }
+
+    const person = new Person({
+        name: personName,
+        creator: msg.from.id
+    })
+    await person.save();
+
+    list.people.push(person._id);
+    await list.save();
+
+    return bot.sendMessage(msg.from.id, `List "${listTitle}" has been updated. Use /lists to check your lists.`);
+});
 
 
 bot.on('/debug', (msg) => {
